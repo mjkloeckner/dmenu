@@ -13,16 +13,6 @@ index d997033..e623001 100644
  }
  
  static int
-@@ -158,8 +156,10 @@ drawmenu(void)
- 		drw_setscheme(drw, scheme[SchemeSel]);
- 		x = drw_text(drw, x, 0, promptw, bh, lrpad / 2, prompt, 0);
- 	}
-+
- 	/* draw input field */
- 	w = (lines > 0 || !matches) ? mw - x : inputw;
-+
- 	drw_setscheme(drw, scheme[SchemeNorm]);
- 	drw_text(drw, x, 0, w, bh, lrpad / 2, text, 0);
  
 @@ -613,7 +613,7 @@ buttonpress(XEvent *e)
  {
