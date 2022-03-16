@@ -1,5 +1,14 @@
+From 462180ca92f799021500ea43128dbd1817fb057a Mon Sep 17 00:00:00 2001
+From: klewer-martin <martin.cachari@gmail.com>
+Date: Wed, 16 Mar 2022 00:44:41 -0300
+Subject: [PATCH] scroll per line support
+
+---
+ dmenu.c | 25 +++++++++++++++++++------
+ 1 file changed, 19 insertions(+), 6 deletions(-)
+
 diff --git a/dmenu.c b/dmenu.c
-index d997033..e623001 100644
+index d997033..f7e1d72 100644
 --- a/dmenu.c
 +++ b/dmenu.c
 @@ -93,9 +93,7 @@ calcoffsets(void)
@@ -13,8 +22,7 @@ index d997033..e623001 100644
  }
  
  static int
- 
-@@ -613,7 +613,7 @@ buttonpress(XEvent *e)
+@@ -613,7 +611,7 @@ buttonpress(XEvent *e)
  {
  	struct item *item;
  	XButtonPressedEvent *ev = &e->xbutton;
@@ -23,13 +31,12 @@ index d997033..e623001 100644
  
  	if (ev->window != win)
  		return;
-@@ -648,14 +648,36 @@ buttonpress(XEvent *e)
+@@ -648,14 +646,29 @@ buttonpress(XEvent *e)
  	}
  	/* scroll up */
  	if (ev->button == Button4 && prev) {
 -		sel = curr = prev;
 +		curr = prev;
-+
 +		if (lines > 0)
 +			n = (lines - 1) * bh;
 +		else
@@ -39,13 +46,9 @@ index d997033..e623001 100644
 +		for (i = 0, next = curr; next->right; next = next->right)
 +			if ((i += (lines > 0) ? bh : MIN(TEXTW(next->text), n)) > n)
 +				break;
-+		
-+		if(sel == next->right) {
-+			if(lines > 0) 
-+				sel = next;
-+			else 
-+				sel = next->left;
-+		}
++
++		if(sel == next->right)
++			sel = ((lines > 0) ? next : next->left);
 +
  		calcoffsets();
  		drawmenu();
@@ -55,10 +58,11 @@ index d997033..e623001 100644
  	if (ev->button == Button5 && next) {
 -		sel = curr = next;
 +		curr = curr->right;
-+
 +		if(sel == curr->left)
 +			sel = curr;
-+
  		calcoffsets();
  		drawmenu();
  		return;
+-- 
+2.35.1
+
