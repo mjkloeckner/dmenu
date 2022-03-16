@@ -93,18 +93,7 @@ calcoffsets(void)
 		if ((i += (lines > 0) ? bh : MIN(TEXTW(next->text), n)) > n)
 			break;
 
-	for (i = 0, prev = curr; prev && prev->left; prev = prev->left)
-		if ((i += (lines > 0) ? bh : MIN(TEXTW(prev->left->text), n)) > n)
-			break;
-}
-
-static int
-max_textw(void)
-{
-	int len = 0;
-	for (struct item *item = items; item && item->text; item++)
-		len = MAX(TEXTW(item->text), len);
-	return len;
+	prev = curr->left;
 }
 
 static void
@@ -158,8 +147,10 @@ drawmenu(void)
 		drw_setscheme(drw, scheme[SchemeSel]);
 		x = drw_text(drw, x, 0, promptw, bh, lrpad / 2, prompt, 0);
 	}
+
 	/* draw input field */
 	w = (lines > 0 || !matches) ? mw - x : inputw;
+
 	drw_setscheme(drw, scheme[SchemeNorm]);
 	drw_text(drw, x, 0, w, bh, lrpad / 2, text, 0);
 
@@ -613,7 +604,7 @@ buttonpress(XEvent *e)
 {
 	struct item *item;
 	XButtonPressedEvent *ev = &e->xbutton;
-	int x = 0, y = 0, h = bh, w;
+	int x = 0, y = 0, h = bh, w, i, n;
 
 	if (ev->window != win)
 		return;
@@ -648,14 +639,36 @@ buttonpress(XEvent *e)
 	}
 	/* scroll up */
 	if (ev->button == Button4 && prev) {
-		sel = curr = prev;
+		curr = prev;
+
+		if (lines > 0)
+			n = (lines - 1) * bh;
+		else
+			n = mw - (promptw + inputw + TEXTW("<") + TEXTW(">"));
+
+		/* we need to seek the final element */
+		for (i = 0, next = curr; next->right; next = next->right)
+			if ((i += (lines > 0) ? bh : MIN(TEXTW(next->text), n)) > n)
+				break;
+		
+		if(sel == next->right) {
+			if(lines > 0) 
+				sel = next;
+			else 
+				sel = next->left;
+		}
+
 		calcoffsets();
 		drawmenu();
 		return;
 	}
 	/* scroll down */
 	if (ev->button == Button5 && next) {
-		sel = curr = next;
+		curr = curr->right;
+
+		if(sel == curr->left)
+			sel = curr;
+
 		calcoffsets();
 		drawmenu();
 		return;
@@ -900,7 +913,7 @@ setup(void)
 		/* no focused window is on screen, so use pointer location instead */
 		if (mon < 0 && !area && XQueryPointer(dpy, root, &dw, &dw, &x, &y, &di, &di, &du))
 			for (i = 0; i < n; i++)
-				if (INTERSECT(x, y, 1, 1, info[i]))
+				if (INTERSECT(x, y, 1, 1, info[i]) != 0)
 					break;
 
 		if (centered) {

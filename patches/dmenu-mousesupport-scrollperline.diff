@@ -1,0 +1,74 @@
+diff --git a/dmenu.c b/dmenu.c
+index d997033..e623001 100644
+--- a/dmenu.c
++++ b/dmenu.c
+@@ -93,9 +93,7 @@ calcoffsets(void)
+ 		if ((i += (lines > 0) ? bh : MIN(TEXTW(next->text), n)) > n)
+ 			break;
+ 
+-	for (i = 0, prev = curr; prev && prev->left; prev = prev->left)
+-		if ((i += (lines > 0) ? bh : MIN(TEXTW(prev->left->text), n)) > n)
+-			break;
++	prev = curr->left;
+ }
+ 
+ static int
+@@ -158,8 +156,10 @@ drawmenu(void)
+ 		drw_setscheme(drw, scheme[SchemeSel]);
+ 		x = drw_text(drw, x, 0, promptw, bh, lrpad / 2, prompt, 0);
+ 	}
++
+ 	/* draw input field */
+ 	w = (lines > 0 || !matches) ? mw - x : inputw;
++
+ 	drw_setscheme(drw, scheme[SchemeNorm]);
+ 	drw_text(drw, x, 0, w, bh, lrpad / 2, text, 0);
+ 
+@@ -613,7 +613,7 @@ buttonpress(XEvent *e)
+ {
+ 	struct item *item;
+ 	XButtonPressedEvent *ev = &e->xbutton;
+-	int x = 0, y = 0, h = bh, w;
++	int x = 0, y = 0, h = bh, w, i, n;
+ 
+ 	if (ev->window != win)
+ 		return;
+@@ -648,14 +648,36 @@ buttonpress(XEvent *e)
+ 	}
+ 	/* scroll up */
+ 	if (ev->button == Button4 && prev) {
+-		sel = curr = prev;
++		curr = prev;
++
++		if (lines > 0)
++			n = (lines - 1) * bh;
++		else
++			n = mw - (promptw + inputw + TEXTW("<") + TEXTW(">"));
++
++		/* we need to seek the final element */
++		for (i = 0, next = curr; next->right; next = next->right)
++			if ((i += (lines > 0) ? bh : MIN(TEXTW(next->text), n)) > n)
++				break;
++		
++		if(sel == next->right) {
++			if(lines > 0) 
++				sel = next;
++			else 
++				sel = next->left;
++		}
++
+ 		calcoffsets();
+ 		drawmenu();
+ 		return;
+ 	}
+ 	/* scroll down */
+ 	if (ev->button == Button5 && next) {
+-		sel = curr = next;
++		curr = curr->right;
++
++		if(sel == curr->left)
++			sel = curr;
++
+ 		calcoffsets();
+ 		drawmenu();
+ 		return;
